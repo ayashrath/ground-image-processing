@@ -15,15 +15,16 @@ while (True):
 
     img = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
     img = Image(img)
-    squares = img.detect_squares()
+    cells = img.detect_squares()
 
-    for row in squares:
-        for c in row:
-            cX, cY = img.centre(c)
-            cv2.drawContours(frame, [c], -1, (0, 255, 0), -1)
-            cv2.circle(frame, (cX, cY), 7, (0, 0, 255), -1)
+    for cell in cells:
+        cX, cY = img.centre(cell)
+        cv2.drawContours(frame, [cell], -1, (0, 255, 0), -1)
+        cv2.circle(frame, (cX, cY), 7, (0, 0, 255), -1)
 
     cv2.imshow('frame', frame)
+
+    frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
     frames.append(frame)
 
     # Press Q key to quit
