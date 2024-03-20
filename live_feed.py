@@ -36,4 +36,7 @@ vid.release()
 # Destroy all the windows
 cv2.destroyAllWindows()
 
-img.video("vid/Detect.avi", frames)
+
+ffmpeg_loc = "C:\\Users\\ayash\\AppData\\Local\\Microsoft\\WinGet\\Packages\\\
+    Gyan.FFmpeg_Microsoft.Winget.Source_8wekyb3d8bbwe\\ffmpeg-6.1.1-full_build\\bin\\ffmpeg.exe"
+img.video("vid/Detect.avi", frames, bin=ffmpeg_loc)

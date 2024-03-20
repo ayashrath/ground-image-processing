@@ -22,7 +22,10 @@ def show_img(img: np.ndarray, title: str = "Image") -> None:
     cv2.waitKey(5000)
 
 
-def gen_video(path: str, frames: List[np.ndarray], fps: int = 30, frame_size: Tuple[int, int] = (1920, 1080), bin: str = "/bin/ffmpeg", end_extra: bool = False, image_scale: str = "grey") -> None:
+def gen_video(
+    path: str, frames: List[np.ndarray], fps: int = 30, frame_size: Tuple[int, int] = (1920, 1080),
+    bin: str = "/bin/ffmpeg", end_extra: bool = False, image_scale: str = "grey"
+        ) -> None:
     """Generate Video with list of Image, using ffmpeg
 
     Parameter:
@@ -33,8 +36,6 @@ def gen_video(path: str, frames: List[np.ndarray], fps: int = 30, frame_size: Tu
         bin: The path where the ffmpeg binary
         end_extra: If you want to have the last frame of the video to last a bit longer
     """
-
-    bin = "C:\\Users\\ayash\\AppData\\Local\\Microsoft\\WinGet\\Packages\\Gyan.FFmpeg_Microsoft.Winget.Source_8wekyb3d8bbwe\\ffmpeg-6.1.1-full_build\\bin\\ffmpeg.exe"
 
     if image_scale == "rgb":
         pix_fmt = "rgb24"
@@ -130,13 +131,15 @@ class Image:
         # blur to smoothen out the edges which improve the adaptive threshold results
         blur = cv2.GaussianBlur(self.get_img(), (7, 7), 0)
 
-        # Explain the threshold algorithms
+        # The gaussian adaptive threshold deals with the shadows while otsu helps to get the grid out of that
         thresh = cv2.adaptiveThreshold(blur, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 57, 7)
         _, thresh = cv2.threshold(thresh, 200, 255, cv2.THRESH_OTSU)
 
         return thresh
 
-    def condition(self, cnts: np.ndarray, min: int = 100000, max: int = 200000, max_count: int = 35, min_count: int = 25) -> Tuple[int, int]:
+    def condition(
+        self, cnts: np.ndarray, min: int = 100000, max: int = 200000, max_count: int = 27, min_count: int = 25
+            ) -> Tuple[int, int]:
         """
         Adjust variables to ensure the squares get tracked
 
@@ -151,9 +154,9 @@ class Image:
             - (max_value, min_value): The values that satisfy the situation
         """
 
-        min_val = 0
+        min_val = 10000
         max_val = max-min
-        diff = 1000
+        step = 1000
 
         # if the input has no contours
         if len(cnts) < min_count:
@@ -170,8 +173,8 @@ class Image:
             if max_count >= count >= min_count:
                 return max_val, min_val
 
-            min_val += diff
-            max_val += diff
+            min_val += step
+            max_val += step
 
         # If the needed <>_count conditions couldn't be satisfied
         return 0, 0
@@ -199,7 +202,7 @@ class Image:
 
         return morph
 
-    def centre(self, c) -> Tuple[int, int]:  # change it such that it can find all the contours itself, and not one at a time
+    def centre(self, c) -> Tuple[int, int]:
         """
         Get the centre of contours
 
@@ -226,9 +229,8 @@ class Image:
         Return:
             - list of contours
         """
-        # Sort by top to bottom and each row by left to right
-        invert = 255 - morph
-        cnts = cv2.findContours(invert, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+
+        cnts = cv2.findContours(morph, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
         if len(cnts) == 2:
             cnts = cnts[0]
@@ -241,23 +243,22 @@ class Image:
             cnts = []
 
         cells = []
-        row = []
 
         max_val, min_val = self.condition(cnts)
 
-        for (i, c) in enumerate(cnts, 1):
+        if __name__ == "__main__":
+            print("MAX, MIN", max_val, min_val)
+
+        for c in cnts:
             area = cv2.contourArea(c)
+            if __name__ == "__main__":
+                print("Area", area)
             if max_val > area > min_val:
-                row.append(c)
-                if i % 5 == 0:
-                    (cnts, _) = contours.sort_contours(row, method="left-to-right")
-                    for c in cnts:
-                        cells.append(c)
-                    row = []
+                cells.append(c)
 
         count = len(cells)
 
-        if __name__ != "__main__":
+        if __name__ == "__main__":
             print("Cell Count", count)
 
         return cells
@@ -271,7 +272,10 @@ class Image:
         """
 
         thresh = self.threshold()
+        # show_img(cv2.resize(thresh, (800, 800)))
         morph = self.filter_boxes(thresh)
+        temp = cv2.resize(morph, (800, 800))
+        show_img(temp)
         the_squares = self.get_squares(morph)
 
         return the_squares
@@ -284,11 +288,16 @@ if __name__ == '__main__':
         img = Image(cv2.imread("img/" + name + ".jpg"))
         squares = img.detect_squares()
 
+        img_bgr = cv2.imread("img/" + name + ".jpg")
+
         for cell in squares:
             cX, cY = img.centre(cell)
-            cv2.drawContours(img.get_img(), [cell], -1, (0, 255, 0), -1)
-            cv2.circle(img.get_img(), (cX, cY), 7, (0, 0, 255), -1)
+            cv2.drawContours(img_bgr, [cell], -1, (0, 255, 0), -1)
+            cv2.circle(img_bgr, (cX, cY), 7, (0, 0, 255), -1)
 
-        show_img(img.resize(800, 800), title='frame')
+        img_bgr = cv2.resize(img_bgr, (800, 800))
+
+        show_img(img_bgr, title='frame')
+        quit()
 
     cv2.destroyAllWindows()
