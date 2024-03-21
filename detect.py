@@ -9,22 +9,24 @@ import cv2
 from imutils import contours
 
 
-def show_img(img: np.ndarray, title: str = "Image") -> None:
+def show_img(img: np.ndarray, title: str = "Image", no_delay: bool = False) -> None:
     """
     Displays image using OpenCV
 
     Parameter:
         - img: The image
         - title: The window title
+        - no_delay: If you want no delay (for videos)
     """
 
     cv2.imshow(title, img)
-    cv2.waitKey(5000)
+    if not no_delay:
+        cv2.waitKey(5000)
 
 
 def gen_video(
     path: str, frames: List[np.ndarray], fps: int = 30, frame_size: Tuple[int, int] = (1920, 1080),
-    bin: str = "/bin/ffmpeg", end_extra: bool = False, image_scale: str = "grey"
+    bin: str = "/bin/ffmpeg", end_extra: bool = False, image_scale: str = "grey", output_suppress: bool = True
         ) -> None:
     """Generate Video with list of Image, using ffmpeg
 
@@ -35,6 +37,7 @@ def gen_video(
         frame_size: The resolution of the video
         bin: The path where the ffmpeg binary
         end_extra: If you want to have the last frame of the video to last a bit longer
+        output_suppress: If you want to suppess the ffmpeg output
     """
 
     if image_scale == "rgb":
@@ -61,12 +64,18 @@ def gen_video(
     ]
 
     # Open a subprocess to execute the ffmpeg command and also silence output and error
-    ffmpeg_process = subprocess.Popen(
-        ffmpeg_cmd,
-        stdin=subprocess.PIPE,
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL,
-    )
+    if output_suppress:
+        ffmpeg_process = subprocess.Popen(
+            ffmpeg_cmd,
+            stdin=subprocess.PIPE,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+    else:
+        ffmpeg_process = subprocess.Popen(
+            ffmpeg_cmd,
+            stdin=subprocess.PIPE,
+        )
 
     # Write frames to the subprocess
     for frame in frames:
@@ -138,8 +147,8 @@ class Image:
         return thresh
 
     def condition(
-        self, cnts: np.ndarray, threshold_percent: int = 10, max_count: int = 27, min_count: int = 25,
-        min_area: int = 1000
+        self, cnts: np.ndarray, threshold_percent: int = 10, max_count: int = 25, min_count: int = 25,
+        min_area: int = 1000, output: bool = False
     ) -> Tuple[int, int]:
         """
         Adjust variables to ensure the squares get tracked. It checks for contour areas that are similar areas and gets
@@ -151,6 +160,7 @@ class Image:
             - max_count: The max count of squares (contours) allowed here
             - min_count: The min count of squares (contours) allowed here
             - min_area: The minimum area that is considered, to remove any imperfect contours
+            - output: If you want dignostic data
 
         Return:
             - cnts: The required square cnts
@@ -177,13 +187,21 @@ class Image:
 
         groups.append(current_group)
 
+        if output:
+            print([len(group) for group in groups].sort())
+
         final_cnts = []
+        area_final = []
 
         for group in groups[::-1]:  # Reversed to prioritise larger objects
             if max_count >= len(group) >= min_count:
                 for cell, area in group:
+                    if output:
+                        area_final.append(area)
                     final_cnts.append(cell)
 
+        if output:
+            print(area_final)
         return final_cnts
 
     def filter_boxes(self, thresh: np.ndarray) -> np.ndarray:  # change
@@ -209,7 +227,7 @@ class Image:
 
         return morph
 
-    def centre(self, c) -> Tuple[int, int]:
+    def centre(self, c: np.ndarray) -> Tuple[int, int]:
         """
         Get the centre of contours
 
@@ -226,13 +244,13 @@ class Image:
 
         return cX, cY
 
-    def get_squares(self, morph, output=False) -> List[np.ndarray]:
+    def get_squares(self, morph: np.ndarray, output: bool = False) -> List[np.ndarray]:
         """
         Get the squares from the morphed image
 
         Parameters:
             - morph: Morphed image
-            - output: True if you want to know the number of sqaure detected in stdout
+            - output: If you want the number of sqaure detected in stdout
 
         Return:
             - list of contours
@@ -250,27 +268,29 @@ class Image:
         except ValueError:
             cnts = []
 
-        cells = self.condition(cnts)
-
-        if output:
-            print("Count:", len(cells))
+        cells = self.condition(cnts, output=output)
 
         return cells
 
-    def detect_squares(self) -> List[np.ndarray]:
+    def detect_squares(self, output: bool = False, no_delay: bool = False) -> List[np.ndarray]:
         """
         The entire algorithm
 
         Return:
             - the_squares: The detected contors
+            - output: If you want to view thresh and morph outputs along with output
+            - no_delay: If you want delay (pictures) else True. It is for diagnotic purposes only
         """
 
         thresh = self.threshold()
-        # show_img(cv2.resize(thresh, (800, 800)))
+        thresh_resize = cv2.resize(thresh, (800, 800))  # dignostic
         morph = self.filter_boxes(thresh)
-        # temp = cv2.resize(morph, (800, 800))
-        # show_img(temp)
-        the_squares = self.get_squares(morph)
+        # morph_resize = cv2.resize(morph, (800, 800))  # dignostic
+        the_squares = self.get_squares(morph, output=output)
+
+        if output:
+            show_img(thresh_resize, title="Thresh", no_delay=no_delay)
+            # show_img(morph_resize, title="Morph", no_delay=no_delay)
 
         return the_squares
 
