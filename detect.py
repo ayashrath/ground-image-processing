@@ -138,16 +138,19 @@ class Image:
         return thresh
 
     def condition(
-        self, cnts: np.ndarray, threshold_percent=10, max_count: int = 27, min_count: int = 25
-            ) -> Tuple[int, int]:
+        self, cnts: np.ndarray, threshold_percent: int = 10, max_count: int = 27, min_count: int = 25,
+        min_area: int = 1000
+    ) -> Tuple[int, int]:
         """
-        Adjust variables to ensure the squares get tracked
+        Adjust variables to ensure the squares get tracked. It checks for contour areas that are similar areas and gets
+        the squares that way
 
         Parameters:
             - cnts: array of counters
             - threshold_percent: The percentage difference allowed between countor areas
             - max_count: The max count of squares (contours) allowed here
             - min_count: The min count of squares (contours) allowed here
+            - min_area: The minimum area that is considered, to remove any imperfect contours
 
         Return:
             - cnts: The required square cnts
@@ -157,14 +160,15 @@ class Image:
 
         for c in cnts:
             area = cv2.contourArea(c)
-            areas.append(area)
+            if area >= min_area:
+                areas.append((c, area))
 
-        areas.sort()
+        areas.sort(key=lambda tup: tup[1])
         groups = []
         current_group = [areas[0]]
 
         for i in range(1, len(areas)):
-            percent_diff = abs(areas[i] - areas[i - 1]) / areas[i - 1] * 100
+            percent_diff = abs(areas[i][1] - areas[i - 1][1]) / areas[i - 1][1] * 100
             if percent_diff <= threshold_percent:
                 current_group.append(areas[i])
             else:
@@ -172,16 +176,15 @@ class Image:
                 current_group = [areas[i]]
 
         groups.append(current_group)
-        print(groups)
-        final = []
 
-        for i in groups:
-            print(len(i))
-            if max_count >= len(i) >= min_count:
-                final.append(i)
+        final_cnts = []
 
-        print(final)
-        return final[-1]
+        for group in groups[::-1]:  # Reversed to prioritise larger objects
+            if max_count >= len(group) >= min_count:
+                for cell, area in group:
+                    final_cnts.append(cell)
+
+        return final_cnts
 
     def filter_boxes(self, thresh: np.ndarray) -> np.ndarray:  # change
         """
@@ -223,12 +226,13 @@ class Image:
 
         return cX, cY
 
-    def get_squares(self, morph) -> List[np.ndarray]:
+    def get_squares(self, morph, output=False) -> List[np.ndarray]:
         """
         Get the squares from the morphed image
 
         Parameters:
             - morph: Morphed image
+            - output: True if you want to know the number of sqaure detected in stdout
 
         Return:
             - list of contours
@@ -248,9 +252,8 @@ class Image:
 
         cells = self.condition(cnts)
 
-        if __name__ == "__main__":
-            count = len(cells)
-            print(count, cells)
+        if output:
+            print("Count:", len(cells))
 
         return cells
 
@@ -289,6 +292,5 @@ if __name__ == '__main__':
         img_bgr = cv2.resize(img_bgr, (800, 800))
 
         show_img(img_bgr, title='frame')
-        quit()
 
     cv2.destroyAllWindows()
