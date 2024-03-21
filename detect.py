@@ -138,46 +138,50 @@ class Image:
         return thresh
 
     def condition(
-        self, cnts: np.ndarray, min: int = 100000, max: int = 200000, max_count: int = 27, min_count: int = 25
+        self, cnts: np.ndarray, threshold_percent=10, max_count: int = 27, min_count: int = 25
             ) -> Tuple[int, int]:
         """
         Adjust variables to ensure the squares get tracked
 
         Parameters:
             - cnts: array of counters
-            - min: The min value from which the calculations start from
-            - max: The max value from which the calculation end at
+            - threshold_percent: The percentage difference allowed between countor areas
             - max_count: The max count of squares (contours) allowed here
             - min_count: The min count of squares (contours) allowed here
 
         Return:
-            - (max_value, min_value): The values that satisfy the situation
+            - cnts: The required square cnts
         """
 
-        min_val = 10000
-        max_val = max-min
-        step = 1000
+        areas = []
 
-        # if the input has no contours
-        if len(cnts) < min_count:
-            return 0, 0
+        for c in cnts:
+            area = cv2.contourArea(c)
+            areas.append(area)
 
-        # Explain Loop
-        while min_val <= min:
-            count = 0
-            for c in cnts:
-                area = cv2.contourArea(c)
-                if max_val > area > min_val:
-                    count += 1
+        areas.sort()
+        groups = []
+        current_group = [areas[0]]
 
-            if max_count >= count >= min_count:
-                return max_val, min_val
+        for i in range(1, len(areas)):
+            percent_diff = abs(areas[i] - areas[i - 1]) / areas[i - 1] * 100
+            if percent_diff <= threshold_percent:
+                current_group.append(areas[i])
+            else:
+                groups.append(current_group)
+                current_group = [areas[i]]
 
-            min_val += step
-            max_val += step
+        groups.append(current_group)
+        print(groups)
+        final = []
 
-        # If the needed <>_count conditions couldn't be satisfied
-        return 0, 0
+        for i in groups:
+            print(len(i))
+            if max_count >= len(i) >= min_count:
+                final.append(i)
+
+        print(final)
+        return final[-1]
 
     def filter_boxes(self, thresh: np.ndarray) -> np.ndarray:  # change
         """
@@ -242,24 +246,11 @@ class Image:
         except ValueError:
             cnts = []
 
-        cells = []
-
-        max_val, min_val = self.condition(cnts)
+        cells = self.condition(cnts)
 
         if __name__ == "__main__":
-            print("MAX, MIN", max_val, min_val)
-
-        for c in cnts:
-            area = cv2.contourArea(c)
-            if __name__ == "__main__":
-                print("Area", area)
-            if max_val > area > min_val:
-                cells.append(c)
-
-        count = len(cells)
-
-        if __name__ == "__main__":
-            print("Cell Count", count)
+            count = len(cells)
+            print(count, cells)
 
         return cells
 
@@ -274,8 +265,8 @@ class Image:
         thresh = self.threshold()
         # show_img(cv2.resize(thresh, (800, 800)))
         morph = self.filter_boxes(thresh)
-        temp = cv2.resize(morph, (800, 800))
-        show_img(temp)
+        # temp = cv2.resize(morph, (800, 800))
+        # show_img(temp)
         the_squares = self.get_squares(morph)
 
         return the_squares
