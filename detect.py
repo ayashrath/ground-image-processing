@@ -142,7 +142,7 @@ class Image:
 
         # The gaussian adaptive threshold deals with the shadows while otsu helps to get the grid out of that
         thresh = cv2.adaptiveThreshold(blur, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 57, 7)
-        _, thresh = cv2.threshold(thresh, 200, 255, cv2.THRESH_OTSU)
+        #_, thresh = cv2.threshold(thresh, 200, 255, cv2.THRESH_OTSU)
 
         return thresh
 
@@ -300,14 +300,14 @@ if __name__ == '__main__':
     for name in ["normal", "left", "right", "down", "up"]:
         print("Current:", name)
         img = Image(cv2.imread("img/" + name + ".jpg"))
-        squares = img.detect_squares()
+        squares = img.detect_squares(output=True)
 
         img_bgr = cv2.imread("img/" + name + ".jpg")
 
         for cell in squares:
             cX, cY = img.centre(cell)
             cv2.drawContours(img_bgr, [cell], -1, (0, 255, 0), -1)
-            cv2.circle(img_bgr, (cX, cY), 7, (0, 0, 255), -1)
+            cv2.circle(img_bgr, (cX, cY), 15, (0, 0, 255), -1)
 
         img_bgr = cv2.resize(img_bgr, (800, 800))
 
