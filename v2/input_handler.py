@@ -41,11 +41,12 @@ class UDPConn:
         return thermal_array
 
 
-class Thermal_Input:
+class Thermal_Store:
     """
-    It helps store the thermal data, thus facilitates backup "and restore of data"
+    It helps store the thermal data, thus facilitates backup
     The data is stored in a folder with name from the current unix time
     It will contain 3 info files - the raw data, the unit of the data and finally a image file representing the data
+    (JET)
 
     **Note:** The image file is created by normalising the data from the raw data array, so it can't be used to get the
     exact data info
@@ -54,15 +55,11 @@ class Thermal_Input:
       - temp_array (np.ndarray): The np array that contains the pixel temp data from the thermal camera input
       - convert_to_C (bool) (default=True): The input is in Kelvin, so it converts to celcius if needed
       - path (str) (default="./backups"): The path where the backup for data of object of this class will be stored
-      - colour_map (int) (default=cv2.COLORMAP_JET)
 
     Exceptions:
       - FileExistsError if the folder for backup already exists (should not as it is done by using UNIX time)
     """
-    def __init__(
-        self, temp_array: np.ndarray, convert_to_C: bool = True, path: str = "./backups",
-        colour_map: int = cv2.COLORMAP_JET
-    ):
+    def __init__(self, temp_array: np.ndarray, convert_to_C: bool = True, path: str = "./backups"):
 
         # Unit
         self.UNIT = "Kelvin"
@@ -76,7 +73,7 @@ class Thermal_Input:
         # Normalised, Colourmaped Array
         normalised_array = cv2.normalize(self.raw_data_store, None, 0, 255, cv2.NORM_MINMAX)
         normalised_array = np.uint8(normalised_array)
-        self.colourmapped_temp_array = cv2.applyColorMap(normalised_array, colour_map)
+        self.colourmapped_temp_array = cv2.applyColorMap(normalised_array, cv2.COLORMAP_JET)
 
         # Make and cd into Dir
         unix_time = int(time.time())  # only keeps till the seconds
@@ -91,18 +88,76 @@ class Thermal_Input:
 
     def backup(self) -> None:
         """
-        Makes the needed backups for the raw data, unit and the image file
+        Makes the needed backups for the raw data, unit, the image file
         """
 
         # raw data
-        np.savetxt('raw_temp_array.txt', self.raw_temp_array)
+        np.savetxt("raw_temp_array.txt", self.raw_temp_array)
 
         # unit
-        with open("unit.txt", "w") as file:
-            file.write(self.UNIT)
+        with open("unit.txt", "w") as fh:
+            fh.write(self.UNIT)
 
         # image
         img_path = os.path.join(os.getcwd(), "infra.jpg")
         cv2.imwrite(img_path, self.colourmapped_temp_array)
 
-        # !!! Have the Auto Code Here if you make it !!!
+        # !!! Have the Auto Code Here if you make it - SQL DB STORE FOR IT!!!
+
+
+class Thermal_Retrieve:
+    """
+    Its main job is to retrieve data that is stored in the disk
+
+    Parameters:
+      - dir_name: the unix time name which represents an image dir
+      - backup_path (str) (default="./backup"): The dir where the backup stuff is kept
+
+    Exceptions:
+      - FileNotFoundError if the Unix time dir or any of its files are not found
+    """
+
+    def __init__(self, dir_name: str, backup_path: str = "./backup"):
+        full_path = os.path.join(backup_path, dir_name)
+
+        if not os.path.exists(full_path):
+            raise FileNotFoundError
+
+        os.chdir(full_path)
+
+        # The unit
+        with open("unit.txt", "r") as fh:  # can raise FileNotFound
+            unit = fh.read()
+            if unit not in ["Kelvin", "Celcius"]:
+                raise ValueError
+
+            self.UNIT = unit
+
+        # The raw data
+        self.raw_data_array = np.loadtxt("raw_temp_array.txt")  # can raise FileNotFound
+
+        # The image
+        self.img = cv2.imread("infra.jpg")
+        if self.img is None:
+            raise FileNotFoundError
+
+    def get_unit(self) -> str:
+        """
+        Returns:
+          - UNIT: The unit of temps
+        """
+        return self.UNIT
+
+    def get_raw_temp_data(self) -> np.ndarray:
+        """
+        Returns:
+          - raw_data_array: The pixel temp values of the thermal image
+        """
+        return self.raw_data_array
+
+    def get_img(self) -> np.ndarray:
+        """
+        Returns:
+          - img: The thermal img array
+        """
+        return self.img
