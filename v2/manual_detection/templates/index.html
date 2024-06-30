@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>All Thermal Images</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body>
+    <h1>Images (Oldest to Newest)</h1>
+    <h2>Names are Unix Times of Creation</h2>
+    <ul>
+        {% for dir in directories %}
+            <li><a href="{{ url_for('view_image', directory=dir) }}">{{ dir }}</a></li>
+        {% endfor %}
+    </ul>
+</body>
+</html>

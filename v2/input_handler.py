@@ -11,7 +11,7 @@ import cv2
 
 
 # Constants
-BACKUP_PATH = "./backup"
+BACKUP_PATH = "./backups"
 UNIT = "Celcius"
 
 
@@ -96,7 +96,7 @@ class Thermal_Store:
         np.savetxt("raw_temp_array.txt", self.raw_temp_array)
 
         # image
-        img_path = os.path.join(os.getcwd(), "infra.jpg")
+        img_path = os.path.join(os.getcwd(), "img.jpg")
         cv2.imwrite(img_path, self.colourmapped_temp_array)
 
         # !!! Have the Auto Code Here if you make it - SQL DB STORE FOR IT!!!
@@ -125,7 +125,7 @@ class Thermal_Retrieve:
         self.raw_data_array = np.loadtxt("raw_temp_array.txt")  # can raise FileNotFound
 
         # The image
-        self.img = cv2.imread("infra.jpg")
+        self.img = cv2.imread("img.jpg")
         if self.img is None:
             raise FileNotFoundError
 
