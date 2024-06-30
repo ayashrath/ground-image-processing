@@ -10,6 +10,11 @@ import numpy as np
 import cv2
 
 
+# Constants
+BACKUP_PATH = "./backup"
+UNIT = "Celcius"
+
+
 class UDPConn:
     """
     The class that manages the UDP connection
@@ -45,27 +50,23 @@ class Thermal_Store:
     """
     It helps store the thermal data, thus facilitates backup
     The data is stored in a folder with name from the current unix time
-    It will contain 3 info files - the raw data, the unit of the data and finally a image file representing the data
-    (JET)
+    It will contain 2 info files - the raw data and image file representing the data (JET)
 
     **Note:** The image file is created by normalising the data from the raw data array, so it can't be used to get the
-    exact data info
+    exact data info.
 
     Parameters:
       - temp_array (np.ndarray): The np array that contains the pixel temp data from the thermal camera input
       - convert_to_C (bool) (default=True): The input is in Kelvin, so it converts to celcius if needed
-      - path (str) (default="./backups"): The path where the backup for data of object of this class will be stored
 
     Exceptions:
       - FileExistsError if the folder for backup already exists (should not as it is done by using UNIX time)
     """
-    def __init__(self, temp_array: np.ndarray, convert_to_C: bool = True, path: str = "./backups"):
-
-        # Unit
-        self.UNIT = "Kelvin"
-        if convert_to_C:
-            temp_array = temp_array - 273
-            self.UNIT = "Celcius"
+    def __init__(self, temp_array: np.ndarray, convert_to_C: bool = True):
+        if UNIT == "Celcius":
+            temp_array = temp_array - 273  # from K to C
+        elif UNIT != "Kelvin":
+            raise ValueError
 
         # Raw array
         self.raw_temp_array = temp_array
@@ -77,7 +78,7 @@ class Thermal_Store:
 
         # Make and cd into Dir
         unix_time = int(time.time())  # only keeps till the seconds
-        new_path = os.path.join(path, str(unix_time))
+        new_path = os.path.join(BACKUP_PATH, str(unix_time))
 
         if not os.path.exists(new_path):
             os.makedirs(new_path)
@@ -88,15 +89,11 @@ class Thermal_Store:
 
     def backup(self) -> None:
         """
-        Makes the needed backups for the raw data, unit, the image file
+        Makes the needed backups for the raw data and the image file
         """
 
         # raw data
         np.savetxt("raw_temp_array.txt", self.raw_temp_array)
-
-        # unit
-        with open("unit.txt", "w") as fh:
-            fh.write(self.UNIT)
 
         # image
         img_path = os.path.join(os.getcwd(), "infra.jpg")
@@ -111,27 +108,18 @@ class Thermal_Retrieve:
 
     Parameters:
       - dir_name: the unix time name which represents an image dir
-      - backup_path (str) (default="./backup"): The dir where the backup stuff is kept
 
     Exceptions:
       - FileNotFoundError if the Unix time dir or any of its files are not found
     """
 
-    def __init__(self, dir_name: str, backup_path: str = "./backup"):
-        full_path = os.path.join(backup_path, dir_name)
+    def __init__(self, dir_name: str):
+        full_path = os.path.join(BACKUP_PATH, dir_name)
 
         if not os.path.exists(full_path):
             raise FileNotFoundError
 
         os.chdir(full_path)
-
-        # The unit
-        with open("unit.txt", "r") as fh:  # can raise FileNotFound
-            unit = fh.read()
-            if unit not in ["Kelvin", "Celcius"]:
-                raise ValueError
-
-            self.UNIT = unit
 
         # The raw data
         self.raw_data_array = np.loadtxt("raw_temp_array.txt")  # can raise FileNotFound
@@ -140,13 +128,6 @@ class Thermal_Retrieve:
         self.img = cv2.imread("infra.jpg")
         if self.img is None:
             raise FileNotFoundError
-
-    def get_unit(self) -> str:
-        """
-        Returns:
-          - UNIT: The unit of temps
-        """
-        return self.UNIT
 
     def get_raw_temp_data(self) -> np.ndarray:
         """
