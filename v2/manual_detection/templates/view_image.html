@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>View Image</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+        #canvasContainer {
+            position: relative;
+        }
+        #imageCanvas {
+            border: 1px solid #000;
+        }
+        #positions {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Unix time - {{ directory }}</h1>
+    <div id="canvasContainer">
+        <canvas id="imageCanvas"></canvas>
+    </div>
+    <div id="positions"></div>
+    <button id="sendButton">Record Temperatures</button>
+    <script>
+        // inits
+        const canvas = document.getElementById('imageCanvas');
+        const ctx = canvas.getContext('2d');
+        const img = new Image();
+        img.src = "{{ url_for('serve_image', directory=directory, filename='img.jpg') }}";
+
+        const positions = document.getElementById('positions');
+        const sendButton = document.getElementById('sendButton');
+
+        let gridCoordinates = [];
+
+        // draw the img
+        img.onload = () => {
+            canvas.width = img.width;
+            canvas.height = img.height;
+            ctx.drawImage(img, 0, 0);
+        };
+
+        // mouse movement events
+        let isDrawing = false;
+        let startX, startY;
+
+        canvas.addEventListener('mousedown', (e) => {
+            isDrawing = true;
+            const rect = canvas.getBoundingClientRect();
+            startX = e.clientX - rect.left;
+            startY = e.clientY - rect.top;
+        });
+
+        canvas.addEventListener('mousemove', (e) => {
+            if (isDrawing) {
+                const rect = canvas.getBoundingClientRect();
+                const mouseX = e.clientX - rect.left;
+                const mouseY = e.clientY - rect.top;
+                ctx.drawImage(img, 0, 0);  // Redraw the image to clear previous lines
+                drawGrid(startX, startY, mouseX, mouseY);
+            }
+        });
+
+        canvas.addEventListener('mouseup', (e) => {
+            if (isDrawing) {
+                isDrawing = false;
+                const rect = canvas.getBoundingClientRect();
+                const endX = e.clientX - rect.left;
+                const endY = e.clientY - rect.top;
+                calculateCenters(startX, startY, endX, endY);
+            }
+        });
+
+        // the calc functions
+        function drawGrid(x1, y1, x2, y2) {
+            const cols = 5;
+            const rows = 5;
+            const cellWidth = (x2 - x1) / cols;
+            const cellHeight = (y2 - y1) / rows;
+
+            for (let i = 0; i <= cols; i++) {
+                ctx.beginPath();
+                ctx.moveTo(x1 + i * cellWidth, y1);
+                ctx.lineTo(x1 + i * cellWidth, y2);
+                ctx.stroke();
+            }
+
+            for (let i = 0; i <= rows; i++) {
+                ctx.beginPath();
+                ctx.moveTo(x1, y1 + i * cellHeight);
+                ctx.lineTo(x2, y1 + i * cellHeight);
+                ctx.stroke();
+            }
+        }
+
+        function calculateCenters(x1, y1, x2, y2) {
+            const cols = 5;
+            const rows = 5;
+            const cellWidth = (x2 - x1) / cols;
+            const cellHeight = (y2 - y1) / rows;
+            positions.innerHTML = '';
+            gridCoordinates = [];
+
+            for (let row = 0; row < rows; row++) {
+                for (let col = 0; col < cols; col++) {
+                    const centerX = x1 + (col + 0.5) * cellWidth;
+                    const centerY = y1 + (row + 0.5) * cellHeight;
+                    
+                    // Draw center point
+                    ctx.beginPath();
+                    ctx.arc(centerX, centerY, 1, 0, 2 * Math.PI);
+                    ctx.fillStyle = 'red';
+                    ctx.fill();
+
+                    const position = document.createElement('p');
+                    position.innerText = `Center of cell [${row + 1}, ${col + 1}]: (${Math.round(centerX)}, ${Math.round(centerY)})`;
+                    positions.appendChild(position);
+                    gridCoordinates.push({ row: row + 1, col: col + 1, x: Math.round(centerX), y: Math.round(centerY) });
+                }
+            }
+        }
+
+        // send to the backend
+        sendButton.addEventListener('click', () => {
+            fetch('{{ url_for("process_coordinates") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ coordinates: gridCoordinates }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('Success:', data);
+            })
+            .catch((error) => {
+                console.error('Error:', error);
+            });
+        });
+    </script>
+</body>
+</html>

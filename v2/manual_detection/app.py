@@ -22,7 +22,7 @@ def index():
     return render_template('index.html', directories=dirs)
 
 
-# view image
+# view image page
 @app.route('/view/<directory>')
 def view_image(directory):
     image_path = os.path.join(BACKUP_PATH, directory, 'img.jpg')
@@ -32,5 +32,22 @@ def view_image(directory):
         return "Image not found", 404  # incase, though it should not happen
 
 
+# send img file
+@app.route('/images/<directory>/<filename>')
+def serve_image(directory, filename):
+    return send_from_directory(os.path.join(BACKUP_PATH, directory), filename)
+
+
+# get temp stuff
+@app.route('/process_coordinates', methods=['POST'])
+def process_coordinates():
+    data = request.json
+    coordinates = data.get('coordinates')
+
+    print("Received coordinates:", coordinates)
+    return jsonify({"status": "success", "message": "Coordinates received"}), 200
+
+
+# debug statement
 if __name__ == '__main__':
     app.run(debug=True)
