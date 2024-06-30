@@ -142,7 +142,7 @@ class Image:
 
         # The gaussian adaptive threshold deals with the shadows while otsu helps to get the grid out of that
         thresh = cv2.adaptiveThreshold(blur, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 57, 7)
-        #_, thresh = cv2.threshold(thresh, 200, 255, cv2.THRESH_OTSU)
+        # _, thresh = cv2.threshold(thresh, 200, 255, cv2.THRESH_OTSU)
 
         return thresh
 
