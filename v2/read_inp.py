@@ -7,7 +7,6 @@ import time
 import socket
 import numpy as np
 import cv2
-import sqlite3
 
 
 # Constants

@@ -23,6 +23,7 @@
     <div id="canvasContainer">
         <canvas id="imageCanvas"></canvas>
     </div>
+    <p><b>Centre of cell [row, vol]: (x, y)</b></p>
     <div id="positions"></div>
     <button id="sendButton">Record Temperatures</button>
     <script>
@@ -71,7 +72,7 @@
                 const rect = canvas.getBoundingClientRect();
                 const endX = e.clientX - rect.left;
                 const endY = e.clientY - rect.top;
-                calculateCenters(startX, startY, endX, endY);
+                calculateCentres(startX, startY, endX, endY);
             }
         });
 
@@ -97,7 +98,7 @@
             }
         }
 
-        function calculateCenters(x1, y1, x2, y2) {
+        function calculateCentres(x1, y1, x2, y2) {
             const cols = 5;
             const rows = 5;
             const cellWidth = (x2 - x1) / cols;
@@ -107,31 +108,31 @@
 
             for (let row = 0; row < rows; row++) {
                 for (let col = 0; col < cols; col++) {
-                    const centerX = x1 + (col + 0.5) * cellWidth;
-                    const centerY = y1 + (row + 0.5) * cellHeight;
+                    const centreX = x1 + (col + 0.5) * cellWidth;
+                    const centreY = y1 + (row + 0.5) * cellHeight;
                     
-                    // Draw center point
+                    // Draw centre point
                     ctx.beginPath();
-                    ctx.arc(centerX, centerY, 1, 0, 2 * Math.PI);
+                    ctx.arc(centreX, centreY, 1, 0, 2 * Math.PI);
                     ctx.fillStyle = 'red';
                     ctx.fill();
 
                     const position = document.createElement('p');
-                    position.innerText = `Center of cell [${row + 1}, ${col + 1}]: (${Math.round(centerX)}, ${Math.round(centerY)})`;
+                    position.innerText = `Centre of cell [${row + 1}, ${col + 1}]: (${Math.round(centreX)}, ${Math.round(centreY)})`;
                     positions.appendChild(position);
-                    gridCoordinates.push({ row: row + 1, col: col + 1, x: Math.round(centerX), y: Math.round(centerY) });
+                    gridCoordinates.push({ row: row + 1, col: col + 1, x: Math.round(centreX), y: Math.round(centreY) });
                 }
             }
         }
 
         // send to the backend
         sendButton.addEventListener('click', () => {
-            fetch('{{ url_for("process_coordinates") }}', {
+            fetch('{{ url_for("process_coordinates", directory=directory) }}', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ coordinates: gridCoordinates }),
+                body: JSON.stringify({ directory: '{{ directory }}', coordinates: gridCoordinates }),
             })
             .then(response => response.json())
             .then(data => {
