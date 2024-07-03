@@ -58,3 +58,6 @@ while True:
     cv2.imwrite(img_path, colourmapped_img)
 
     # add auto code here when you make
+
+
+# manage exceptions and stuff
