@@ -5,7 +5,48 @@
     <title>All Thermal Images</title>
     <style>
         body {
-            font-family: Arial, sans-serif;
+            font-family: Helvetica, sans-serif;
+            background-color: #9baa9f;
+            margin: 0;
+            padding: 20px;
+        }
+        h1, h2 {
+            text-align: center;
+            color: #1c1c1c;
+        }
+        nav {
+            margin-top: 20px;
+            display: flex;
+            justify-content: center;
+        }
+        ul {
+            list-style-type: none;
+            padding: 0;
+
+            display: flex;
+            flex-wrap: wrap;
+            max-width: 800px;
+        }
+        li {
+            margin: 10px 0;
+            flex: 1 1 calc(33.333% - 20px);
+            margin: 10px;
+        }
+        a {
+            text-decoration: none;
+            color: #007BFF;
+            font-weight: bold;
+            padding: 10px;
+            display: block;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background-color: #dcdcdc;
+            transition: background-color 0.3s, border-color 0.3s;
+        }
+        a:hover {
+            background-color: #007BFF;
+            color: #fff;
+            border-color: #007BFF;
         }
     </style>
 </head>

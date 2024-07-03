@@ -6,8 +6,8 @@ of the background will be mostly room temps (so blue).
 
 Thus by using basic contour detection the main square (+heat bleed) can be seen
 The thing is the heat bleed needs to be eliminatated, so the idea is
-to take the centre of the detected contour and assume it to be the same as 
-the 3rd row and colomn cell of the square grid, i.e, assuming the head bleed is 
+to take the centre of the detected contour and assume it to be the same as
+the 3rd row and colomn cell of the square grid, i.e, assuming the head bleed is
 evenly done. And then using expected pixel length of the square grid, everything is mapped out
 """
 
@@ -94,7 +94,7 @@ def detect_cell_temps(raw_temp_array: np.ndarray, debug: bool = False) -> np.nda
     }
 
     # am using the median coordinates of the edges to account for the imperfections that exist in the edges and
-    # the corners. I could try to make a perfect square instead, but that could be finicy and this seems 
+    # the corners. I could try to make a perfect square instead, but that could be finicy and this seems
     # to also be a simpler solution to the problem
     flatten_cnts = [(point[0][0], point[0][1]) for point in cnts[0]]
 

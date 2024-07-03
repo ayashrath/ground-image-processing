@@ -3,10 +3,15 @@ Reads in the inputs and then stores them on the drive
 """
 
 import os
+import sys
 import time
 import socket
 import numpy as np
 import cv2
+from detect import detect_cell_temps
+
+sys.path.append(os.path.join(os.path.dirname(__file__), "manual_detection"))
+from create_img import drawSquareGrid
 
 
 # Constants
@@ -58,6 +63,14 @@ while True:
     cv2.imwrite(img_path, colourmapped_img)
 
     # add auto code here when you make
+    centres = detect_cell_temps(thermal_array)
+    temp_2d = [[0 for i in range(5)] for j in range(5)]
+
+    for key, val in data.items():
+        ind = int(key) - 1
+        temp_2d[ind//5][ind % 5] = thermal_array[val[1]][val[0]]  # as y axis represents rows
+
+    drawSquareGrid("./auto_result.png", temp_2d, UNIT)
 
 
 # manage exceptions and stuff

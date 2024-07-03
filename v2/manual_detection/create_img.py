@@ -6,10 +6,27 @@ import os
 SIZE = 5
 DIMENSIONS = 800
 FONT_SIZE = 15
-FONT_TFF = "./Arial.ttf"
+FONT_TFF = "./JetBrainsMonoRegular.ttf"
 
 
 def drawSquareGrid(path: str, array: np.ndarray, unit: str) -> None:
+    """
+    Draws a square grid with each cell containing a value, thus providing a way to visually store data for the project
+
+    Parameters:
+      - path (str): The place where the image would be saved
+      - array (np.ndarray): The array that contains the values for each cell - in form as shown in notes
+
+    Note:
+    - the input array example. The array is a array of rows
+    - cell_array = [
+        [0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0],
+    ]
+    """
     img = Image.new(mode="L", size=(DIMENSIONS, DIMENSIONS), color=255)
 
     draw = ImageDraw.Draw(img)
@@ -36,7 +53,7 @@ def drawSquareGrid(path: str, array: np.ndarray, unit: str) -> None:
 
     for x in range((DIMENSIONS//SIZE)//2, DIMENSIONS, DIMENSIONS//SIZE):
         for y in range((DIMENSIONS//SIZE)//2, DIMENSIONS, DIMENSIONS//SIZE):
-            text = str(array[row][coloum]) + " " + unit
+            text = str(array[coloum][row]) + " " + unit  # reversed as the vals are entered as following statement
             centre_offset = FONT_SIZE  # kinda centres the text, can workout the exact thing probably but unnecessary
             draw.text((x-centre_offset, y), text, font=font, fill=0)
             coloum += 1

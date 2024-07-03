@@ -5,16 +5,50 @@
     <title>View Image</title>
     <style>
         body {
-            font-family: Arial, sans-serif;
+            font-family: Helvetica, sans-serif;
+            background-color: #9baa9f;
+            margin: 0;
+            padding: 20px;
+        }
+        h1 {
+            text-align: center;
+            color: #1c1c1c;
         }
         #canvasContainer {
-            position: relative;
+            display: flex;
+            justify-content: center;
+            margin-top: 20px;
         }
         #imageCanvas {
-            border: 1px solid #000;
+            border: 2px solid #000;
+            background-color: #fff;
         }
         #positions {
             margin-top: 20px;
+            background-color: #dad1d1;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        #positions p {
+            margin: 10px 0;
+            color: #555;
+        }
+        button {
+            display: block;
+            margin: 20px auto;
+            padding: 10px 20px;
+            font-size: 16px;
+            font-weight: bold;
+            color: #fff;
+            background-color: #007BFF;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #0056b3;
         }
     </style>
 </head>
