@@ -24,5 +24,6 @@ The current developement info
    1. The temperatures are in Kelvin
 2. The image is stored onto the "Ground Machine" in the following format
    1. Each instance is stored in a dir with name based on unix time of creation
-   2. The dir holds 3 files - one for the unit of measurement, one for the raw temp data and one for the image file
+   2. The dir holds 2 files -  one for the raw temp data and one for the image file
    3. The reason is that the image file would need the data to be normalised, thus it could create issues during extraction
+3. A Web Interface to draw square grids to do the detection manually has been created along side a automatic detection which detects contours and creates its own square grid.
