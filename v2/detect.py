@@ -19,6 +19,7 @@ import random
 
 # constants
 MIN_CONTOUR_AREA = 200
+RATIO_BOUNDS = (0.85, 1.15)  # if a square then the ideal would be 1
 
 
 def detect_cell_temps(raw_temp_array: np.ndarray, debug: bool = False) -> np.ndarray:
@@ -53,7 +54,7 @@ def detect_cell_temps(raw_temp_array: np.ndarray, debug: bool = False) -> np.nda
         for cnt in cnts:
             x, y, w, h = cv2.boundingRect(cnt)
             aspect_ratio = float(w) / h
-            if 1.15 < aspect_ratio < 0.85:
+            if RATIO_BOUNDS[1] < aspect_ratio < RATIO_BOUNDS[-1]:
                 continue
 
             if min_area > cv2.contourArea(cnt) and cv2.contourArea(cnt) > MIN_CONTOUR_AREA:
@@ -98,7 +99,7 @@ def detect_cell_temps(raw_temp_array: np.ndarray, debug: bool = False) -> np.nda
     flatten_cnts = [(point[0][0], point[0][1]) for point in cnts[0]]
 
     x_array = sorted([x for x, y in flatten_cnts])
-    y_array = sorted([y for x, y in flatten_cnts])\
+    y_array = sorted([y for x, y in flatten_cnts])
 
     left_edge_x = x_array[:len(x_array)//2]
     right_edge_x = x_array[len(x_array)//2:]
@@ -110,76 +111,41 @@ def detect_cell_temps(raw_temp_array: np.ndarray, debug: bool = False) -> np.nda
 
     centres["13"] = c_13_x, c_13_y
 
-    for coordinates in flatten_cnts:
-        x = coordinates[0]
-        y = coordinates[1]
-        x_13 = centres["13"][0]
-        y_13 = centres["13"][1]
+    # the reference stuff would be the x coord of left edge and y cood of top edge
+    x, y = int(np.median(left_edge_x)), int(np.median(top_edge_y))
+    x_13, y_13 = centres["13"]
 
-        if y == y_13:  # horizonal match
-            x_diff = x_13 - x
-            if x < x_13:
-                centres["11"] = (x_diff//5 + x, y)
-                centres["12"] = ((x_diff*3)//5 + x, y)
+    # for 11, 12, 14 and 15
+    x_diff = x_13 - x
+    centres["11"], centres["12"], centres["14"], centres["15"] = (
+        (x_diff // 5 + x, y_13),
+        (x_diff * 3 // 5 + x, y_13),
+        (x_diff * 7 // 5 + x, y_13),
+        (x_diff * 9 // 5 + x, y_13),
+    )
 
-                centres["14"] = ((x_diff*7)//5 + x, y)
-                centres["15"] = ((x_diff*9)//5 + x, y)
+    # for 3, 8, 18, 23
+    y_diff = y_13 - y
+    if y < y_13:
+        centres["3"], centres["8"], centres["18"], centres["23"] = (
+            (x_13, y_diff // 5 + y),
+            (x_13, y_diff * 3 // 5 + y),
+            (x_13, y_diff * 7 // 5 + y),
+            (x_13, y_diff * 9 // 5 + y),
+        )
 
-                for sub_coordinates in flatten_cnts:  # their vertical match
-                    x = sub_coordinates[0]
-                    y = sub_coordinates[1]
-                    x_11 = centres["11"][0]
-                    y_11 = centres["11"][1]
-                    x_12 = centres["12"][0]
-                    y_12 = centres["12"][1]
-                    x_14 = centres["14"][0]
-                    y_14 = centres["14"][1]
-                    x_15 = centres["15"][0]
-                    y_15 = centres["15"][1]
-
-                    if x == x_11:
-                        y_diff = y_11 - y
-
-                        if y < y_11:
-                            centres["1"] = (x, y_diff//5 + y)
-                            centres["6"] = (x, (y_diff*3)//5 + y)
-                            centres["16"] = (x, (y_diff*7)//5 + y)
-                            centres["21"] = (x, (y_diff*9)//5 + y)
-
-                    elif x == x_12:
-                        y_diff = y_12 - y
-
-                        if y < y_11:
-                            centres["2"] = (x, y_diff//5 + y)
-                            centres["7"] = (x, (y_diff*3)//5 + y)
-                            centres["17"] = (x, (y_diff*7)//5 + y)
-                            centres["22"] = (x, (y_diff*9)//5 + y)
-
-                    elif x == x_14:
-                        y_diff = y_14 - y
-
-                        if y < y_14:
-                            centres["4"] = (x, y_diff//5 + y)
-                            centres["9"] = (x, (y_diff*3)//5 + y)
-                            centres["19"] = (x, (y_diff*7)//5 + y)
-                            centres["24"] = (x, (y_diff*9)//5 + y)
-
-                    elif x == x_15:
-                        y_diff = y_15 - y
-
-                        if y < y_15:
-                            centres["5"] = (x, y_diff//5 + y)
-                            centres["10"] = (x, (y_diff*3)//5 + y)
-                            centres["20"] = (x, (y_diff*7)//5 + y)
-                            centres["25"] = (x, (y_diff*9)//5 + y)
-        elif x == x_13:  # vertical match
-            y_diff = y_13 - y
-
-            if y < y_13:
-                centres["3"] = (x, y_diff//5 + y)
-                centres["8"] = (x, (y_diff*3)//5 + y)
-                centres["18"] = (x, (y_diff*7)//5 + y)
-                centres["23"] = (x, (y_diff*9)//5 + y)
+    # for rest
+    for ref_cell in [11, 12, 14, 15]:
+        col_cell = ref_cell + np.array([-10, -5, 5, 10])
+        col_cell = [str(i) for i in col_cell]
+        ref_x, ref_y = centres[str(ref_cell)]
+        y_diff = ref_y - y
+        centres[col_cell[0]], centres[col_cell[1]], centres[col_cell[2]], centres[col_cell[3]] = (
+            (ref_x, y_diff // 5 + y),
+            (ref_x, y_diff * 3 // 5 + y),
+            (ref_x, y_diff * 7 // 5 + y),
+            (ref_x, y_diff * 9 // 5 + y),
+        )
 
     # display
     img = cv2.cvtColor(img, cv2.COLOR_GRAY2BGR)
@@ -209,4 +175,4 @@ def detect_cell_temps(raw_temp_array: np.ndarray, debug: bool = False) -> np.nda
 if __name__ == "__main__":
     # Sample thermal data - generated using DALL-E, and is not exact resolution of the Heimann camera output
     inp = cv2.imread("detect-test.png", cv2.IMREAD_GRAYSCALE)
-    detect_cell_temps(inp)
+    detect_cell_temps(inp, debug=True)
